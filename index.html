@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Angola Market Intelligence</title>
+  <meta charset="UTF-8" />
+  <style>
+    body {
+      margin: 0;
+      background-color: #0A0A0A;
+      color: #E5E5E5;
+      font-family: monospace;
+    }
+
+    header {
+      padding: 20px;
+      border-bottom: 1px solid #1F1F1F;
+      font-size: 20px;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .panel {
+      background-color: #111111;
+      border: 1px solid #1F1F1F;
+      padding: 20px;
+      border-radius: 6px;
+    }
+
+    .title {
+      color: #00BFFF;
+      margin-bottom: 10px;
+    }
+
+    .value {
+      font-size: 28px;
+      margin-top: 10px;
+    }
+
+    .green { color: #00FF88; }
+    .orange { color: #FFA500; }
+    .red { color: #FF3B3B; }
+  </style>
+</head>
+<body>
+
+<header>
+  Angola Market Intelligence Portal
+  <div style="font-size:12px;color:#888;">Built by Nassim Watfa</div>
+</header>
+
+<div class="container">
+
+  <div class="panel">
+    <div class="title">USD / AOA</div>
+    <div id="fxValue" class="value">Loading...</div>
+  </div>
+
+  <div class="panel">
+    <div class="title">Angola Risk Score</div>
+    <div id="riskValue" class="value">Loading...</div>
+  </div>
+
+  <div class="panel">
+    <div class="title">System Status</div>
+    <div id="statusValue">Checking...</div>
+  </div>
+
+</div>
+
+<script>
+const API_URL = "https://nassim-angola-intel.onrender.com";
+
+async function fetchData() {
+  try {
+    const fxRes = await fetch(API_URL + "/fx");
+    const fxData = await fxRes.json();
+
+    if (fxData["USD/AOA"]) {
+      document.getElementById("fxValue").innerText = fxData["USD/AOA"];
+      document.getElementById("statusValue").innerText = fxData.cached ? "Using Cache" : "Live Data";
+    } else {
+      document.getElementById("fxValue").innerText = "Error";
+    }
+
+    const riskRes = await fetch(API_URL + "/risk");
+    const riskData = await riskRes.json();
+
+    const risk = riskData["Angola Risk Score"];
+    const riskEl = document.getElementById("riskValue");
+    riskEl.innerText = risk;
+
+    if (risk > 60) {
+      riskEl.className = "value red";
+    } else if (risk > 40) {
+      riskEl.className = "value orange";
+    } else {
+      riskEl.className = "value green";
+    }
+
+  } catch (err) {
+    document.getElementById("statusValue").innerText = "Connection Error";
+  }
+}
+
+fetchData();
+setInterval(fetchData, 300000); // refresh every 5 min
+</script>
+
+</body>
+</html>
