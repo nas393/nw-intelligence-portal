@@ -1,2 +1,7 @@
 {
   "name": "nw-intelligence-portal",
+"private": true,
+  "scripts": {
+    "build": "echo 'No build step required'"
+  }
+}
