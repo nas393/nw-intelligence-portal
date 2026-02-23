@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Angola Market Intelligence</title>
+  <title>NW Intelligence Portal</title>
   <meta charset="UTF-8" />
   <style>
     body {
@@ -19,7 +19,7 @@
 
     .container {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 20px;
       padding: 20px;
     }
@@ -37,17 +37,52 @@
     }
 
     .value {
-      font-size: 28px;
-      margin-top: 10px;
+      font-size: 24px;
+      margin-top: 5px;
     }
 
     .green { color: #00FF88; }
     .orange { color: #FFA500; }
     .red { color: #FF3B3B; }
+
+    #loginBox {
+      max-width: 300px;
+      margin: 100px auto;
+      background: #111;
+      padding: 20px;
+      border: 1px solid #1F1F1F;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 10px;
+      background: #000;
+      color: #fff;
+      border: 1px solid #333;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background: #00BFFF;
+      border: none;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
+<div id="loginBox">
+  <h3>Login</h3>
+  <input id="username" placeholder="Username" />
+  <input id="password" type="password" placeholder="Password" />
+  <button onclick="login()">Enter</button>
+  <div id="loginError" style="color:red;margin-top:10px;"></div>
+</div>
+
+<div id="app" style="display:none;">
 <header>
   Angola Market Intelligence Portal
   <div style="font-size:12px;color:#888;">Built by Nassim Watfa</div>
@@ -66,49 +101,72 @@
   </div>
 
   <div class="panel">
-    <div class="title">System Status</div>
-    <div id="statusValue">Checking...</div>
+    <div class="title">Commodities</div>
+    <div id="commodities"></div>
   </div>
 
+  <div class="panel">
+    <div class="title">Regulation / Laws Feed</div>
+    <div id="laws">Monitoring...</div>
+  </div>
+
+</div>
 </div>
 
 <script>
 const API_URL = "https://nassim-angola-intel.onrender.com";
 
+const users = {
+  "Nassim": "101112",
+  "user": "qwerty1"
+};
+
+function login() {
+  const u = document.getElementById("username").value;
+  const p = document.getElementById("password").value;
+
+  if (users[u] && users[u] === p) {
+    document.getElementById("loginBox").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    fetchData();
+    setInterval(fetchData, 300000);
+  } else {
+    document.getElementById("loginError").innerText = "Invalid credentials";
+  }
+}
+
 async function fetchData() {
   try {
     const fxRes = await fetch(API_URL + "/fx");
     const fxData = await fxRes.json();
-
-    if (fxData["USD/AOA"]) {
-      document.getElementById("fxValue").innerText = fxData["USD/AOA"];
-      document.getElementById("statusValue").innerText = fxData.cached ? "Using Cache" : "Live Data";
-    } else {
-      document.getElementById("fxValue").innerText = "Error";
-    }
+    document.getElementById("fxValue").innerText = fxData["USD/AOA"];
 
     const riskRes = await fetch(API_URL + "/risk");
     const riskData = await riskRes.json();
-
     const risk = riskData["Angola Risk Score"];
     const riskEl = document.getElementById("riskValue");
     riskEl.innerText = risk;
 
-    if (risk > 60) {
-      riskEl.className = "value red";
-    } else if (risk > 40) {
-      riskEl.className = "value orange";
-    } else {
-      riskEl.className = "value green";
-    }
+    if (risk > 60) riskEl.className = "value red";
+    else if (risk > 40) riskEl.className = "value orange";
+    else riskEl.className = "value green";
 
-  } catch (err) {
-    document.getElementById("statusValue").innerText = "Connection Error";
+    const commRes = await fetch(API_URL + "/commodities");
+    const commData = await commRes.json();
+
+    let html = "";
+    for (let key in commData) {
+      html += key + ": " + commData[key].toFixed(2) + "<br>";
+    }
+    document.getElementById("commodities").innerHTML = html;
+
+    document.getElementById("laws").innerText =
+      "Monitoring Angola government publications...";
+
+  } catch {
+    document.getElementById("fxValue").innerText = "Error";
   }
 }
-
-fetchData();
-setInterval(fetchData, 300000); // refresh every 5 min
 </script>
 
 </body>
