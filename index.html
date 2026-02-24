@@ -37,8 +37,7 @@
     }
 
     .value {
-      font-size: 24px;
-      margin-top: 5px;
+      font-size: 22px;
     }
 
     .green { color: #00FF88; }
@@ -84,8 +83,8 @@
 
 <div id="app" style="display:none;">
 <header>
-  Angola Market Intelligence Portal
-  <div style="font-size:12px;color:#888;">Built by Nassim Watfa</div>
+  Angola Intelligence Platform
+  <div style="font-size:12px;color:#888;">Internal System</div>
 </header>
 
 <div class="container">
@@ -96,8 +95,8 @@
   </div>
 
   <div class="panel">
-    <div class="title">Angola Risk Score</div>
-    <div id="riskValue" class="value">Loading...</div>
+    <div class="title">Risk Breakdown</div>
+    <div id="riskValue"></div>
   </div>
 
   <div class="panel">
@@ -106,8 +105,8 @@
   </div>
 
   <div class="panel">
-    <div class="title">Regulation / Laws Feed</div>
-    <div id="laws">Monitoring...</div>
+    <div class="title">Regulation Risk</div>
+    <div id="regulation"></div>
   </div>
 
 </div>
@@ -115,57 +114,66 @@
 
 <script>
 const API_URL = "https://nassim-angola-intel.onrender.com";
+let authToken = null;
 
-const users = {
-  "Nassim": "101112",
-  "user": "qwerty1"
-};
+async function login() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
 
-function login() {
-  const u = document.getElementById("username").value;
-  const p = document.getElementById("password").value;
+  const response = await fetch(API_URL + "/login", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({username, password})
+  });
 
-  if (users[u] && users[u] === p) {
-    document.getElementById("loginBox").style.display = "none";
-    document.getElementById("app").style.display = "block";
-    fetchData();
-    setInterval(fetchData, 300000);
-  } else {
+  if (response.status !== 200) {
     document.getElementById("loginError").innerText = "Invalid credentials";
+    return;
   }
+
+  const data = await response.json();
+  authToken = data.token;
+
+  document.getElementById("loginBox").style.display = "none";
+  document.getElementById("app").style.display = "block";
+
+  fetchData();
+  setInterval(fetchData, 300000);
 }
 
 async function fetchData() {
-  try {
-    const fxRes = await fetch(API_URL + "/fx");
-    const fxData = await fxRes.json();
-    document.getElementById("fxValue").innerText = fxData["USD/AOA"];
 
-    const riskRes = await fetch(API_URL + "/risk");
-    const riskData = await riskRes.json();
-    const risk = riskData["Angola Risk Score"];
-    const riskEl = document.getElementById("riskValue");
-    riskEl.innerText = risk;
+  const headers = {
+    "Authorization": authToken
+  };
 
-    if (risk > 60) riskEl.className = "value red";
-    else if (risk > 40) riskEl.className = "value orange";
-    else riskEl.className = "value green";
+  const fxRes = await fetch(API_URL + "/fx", {headers});
+  const fxData = await fxRes.json();
+  document.getElementById("fxValue").innerText = fxData["USD/AOA"];
 
-    const commRes = await fetch(API_URL + "/commodities");
-    const commData = await commRes.json();
+  const riskRes = await fetch(API_URL + "/risk", {headers});
+  const riskData = await riskRes.json();
 
-    let html = "";
-    for (let key in commData) {
-      html += key + ": " + commData[key].toFixed(2) + "<br>";
-    }
-    document.getElementById("commodities").innerHTML = html;
+  document.getElementById("riskValue").innerHTML = `
+    FX Risk: ${riskData.fx_risk}<br>
+    Commodity Risk: ${riskData.commodity_risk}<br>
+    Regulation Risk: ${riskData.regulation_risk}<br>
+    <strong>Total Risk: ${riskData.total_risk}</strong>
+  `;
 
-    document.getElementById("laws").innerText =
-      "Monitoring Angola government publications...";
+  const commRes = await fetch(API_URL + "/commodities", {headers});
+  const commData = await commRes.json();
 
-  } catch {
-    document.getElementById("fxValue").innerText = "Error";
+  let commHtml = "";
+  for (let key in commData) {
+    commHtml += key + ": " + commData[key].toFixed(2) + "<br>";
   }
+  document.getElementById("commodities").innerHTML = commHtml;
+
+  const regRes = await fetch(API_URL + "/regulations", {headers});
+  const regData = await regRes.json();
+  document.getElementById("regulation").innerText =
+    "Regulation Risk Score: " + regData.regulation_risk;
 }
 </script>
 
